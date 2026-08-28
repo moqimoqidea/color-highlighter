@@ -30,6 +30,7 @@ import com.intellij.codeInsight.daemon.impl.HighlightInfoType
 import com.intellij.codeInsight.daemon.impl.HighlightInfoType.HighlightInfoTypeImpl
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.mallowigi.config.home.ColorHighlighterState
 import com.mallowigi.gutter.GutterColorLineMarkerProvider
@@ -38,19 +39,23 @@ import com.mallowigi.highlighters.HighlighterStyleFactory
 import java.awt.Color
 
 internal object ColorHighlighter {
-  private val COLOR_ELEMENT: HighlightInfoType = HighlightInfoTypeImpl(HighlightSeverity.INFORMATION, DefaultLanguageHighlighterColors.CONSTANT)
+  private val COLOR_ELEMENT: HighlightInfoType =
+    HighlightInfoTypeImpl(HighlightSeverity.INFORMATION, DefaultLanguageHighlighterColors.CONSTANT)
 
-  fun highlightColor(element: PsiElement?, color: Color): HighlightInfo? = getHighlightInfoBuilder(color).range(element!!).create()
+  fun highlightColor(element: PsiElement?, color: Color): HighlightInfo? =
+    getHighlightInfoBuilder(color, element!!.textRange).range(element).create()
 
-  fun highlightColor(range: IntRange, color: Color): HighlightInfo? = getHighlightInfoBuilder(color).range(range.first, range.last).create()
+  fun highlightColor(range: IntRange, color: Color): HighlightInfo? =
+    getHighlightInfoBuilder(color, TextRange(range.first, range.last)).range(range.first, range.last).create()
 
-  private fun getHighlightInfoBuilder(color: Color): HighlightInfo.Builder {
+  private fun getHighlightInfoBuilder(color: Color, range: TextRange): HighlightInfo.Builder {
     val highlighter = HighlighterStyleFactory.instance.getHighlighter(ColorHighlighterState.instance.highlightingStyle)
 
-    var newHighlightInfo = HighlightInfo.newHighlightInfo(COLOR_ELEMENT).textAttributes(highlighter.getAttributesFlyweight(color))
+    var newHighlightInfo =
+      HighlightInfo.newHighlightInfo(COLOR_ELEMENT).textAttributes(highlighter.getAttributesFlyweight(color))
 
     if (GutterColorLineMarkerProvider.isEnabled()) {
-      newHighlightInfo = newHighlightInfo.gutterIconRenderer(GutterColorRenderer(color))
+      newHighlightInfo = newHighlightInfo.gutterIconRenderer(GutterColorRenderer(color, range))
     }
     return newHighlightInfo
   }
