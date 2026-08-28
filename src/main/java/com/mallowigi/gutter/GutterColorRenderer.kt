@@ -31,6 +31,7 @@ import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.ui.ColorChooserService
 import com.intellij.ui.ColorUtil
+import com.intellij.ui.picker.ColorListener
 import com.intellij.ui.scale.JBUIScale
 import com.intellij.util.ui.ColorIcon
 import com.intellij.util.ui.EmptyIcon
@@ -50,7 +51,7 @@ class GutterColorRenderer(private val color: Color?) : GutterIconRenderer() {
         .let { JBUIScale.scaleIcon(it) }
     }
 
-    else -> JBUIScale.scaleIcon(EmptyIcon.create(ICON_SIZE))
+    else          -> JBUIScale.scaleIcon(EmptyIcon.create(ICON_SIZE))
   }
 
   override fun getTooltipText(): String = message("choose.color")
@@ -86,10 +87,15 @@ class GutterColorRenderer(private val color: Color?) : GutterIconRenderer() {
       override fun actionPerformed(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
         val currentColor = color ?: return
-        val newColor = ColorChooserService.getInstance().showDialog(
-          editor.project, editor.component, message("replace.color"), currentColor, false
+        ColorChooserService.getInstance().showPopup(
+          project = editor.project,
+          currentColor = currentColor,
+          editor = editor,
+          listener = { newColor, _ -> copyColor(currentColor, newColor) },
+          showAlpha = currentColor.alpha != 255,
+          showAlphaAsPercent = false,
+          popupCloseListener = null
         )
-        copyColor(currentColor, newColor)
       }
 
       private fun copyColor(currentColor: Color, newColor: Color?) {
@@ -104,9 +110,9 @@ class GutterColorRenderer(private val color: Color?) : GutterIconRenderer() {
 
   override fun equals(other: Any?): Boolean {
     return when {
-      this === other -> true
+      this === other                                -> true
       other == null || javaClass != other.javaClass -> false
-      else -> {
+      else                                          -> {
         val renderer = other as GutterColorRenderer
         color == renderer.color
       }
@@ -115,7 +121,7 @@ class GutterColorRenderer(private val color: Color?) : GutterIconRenderer() {
 
   override fun hashCode(): Int = Objects.hash(color)
 
-  override fun getAlignment(): Alignment = Alignment.RIGHT
+  override fun getAlignment(): Alignment = Alignment.LEFT
 
   companion object {
     private const val ICON_SIZE = 12

@@ -31,7 +31,7 @@
     <category>Editor</category>
     <vendor email="elior@material-theme.com" url="https://github.com/mallowigi">AtomMaterial</vendor>
 
-    <idea-version since-build="211.*"/>
+    <idea-version since-build="261.*"/>
 
     <depends>com.intellij.modules.platform</depends>
     <depends optional="true" config-file="withLang.xml">com.intellij.modules.lang</depends>
