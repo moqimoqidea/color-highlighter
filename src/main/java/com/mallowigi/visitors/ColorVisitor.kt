@@ -30,6 +30,7 @@ import com.intellij.codeInsight.daemon.impl.analysis.HighlightInfoHolder
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.mallowigi.config.home.ColorHighlighterState.Companion.instance
 import com.mallowigi.config.home.HighlightingStyles
 import com.mallowigi.highlighters.RoundedBackgroundPainter
@@ -43,7 +44,6 @@ import java.awt.Color
 abstract class ColorVisitor : HighlightVisitor, LangVisitor, DumbAware {
 
   private var highlightInfoHolder: HighlightInfoHolder? = null
-  private val roundedHighlights = mutableListOf<RoundedHighlight>()
   internal val config = instance
   private val roundedStyles = setOf(
     HighlightingStyles.BACKGROUND,
@@ -60,31 +60,12 @@ abstract class ColorVisitor : HighlightVisitor, LangVisitor, DumbAware {
    */
   fun highlight(element: PsiElement?, color: Color) {
     if (!instance.isEnabled) return
-
-    val textRange = element?.textRange
-    val style = instance.highlightingStyle
-    if (style in roundedStyles && textRange != null) {
-      roundedHighlights += RoundedHighlight(
-        range = IntRange(textRange.startOffset, textRange.endOffset),
-        color = color,
-        paintStyle = style.toRoundedPaintStyle()
-      )
-    }
-
     assert(highlightInfoHolder != null)
     highlightInfoHolder!!.add(ColorHighlighter.highlightColor(element, color))
   }
 
   fun highlight(color: Color, range: IntRange) {
     if (!instance.isEnabled) return
-    val style = instance.highlightingStyle
-    if (style in roundedStyles) {
-      roundedHighlights += RoundedHighlight(
-        range = range,
-        color = color,
-        paintStyle = style.toRoundedPaintStyle()
-      )
-    }
     assert(highlightInfoHolder != null)
     highlightInfoHolder!!.add(ColorHighlighter.highlightColor(range, color))
   }
@@ -105,7 +86,6 @@ abstract class ColorVisitor : HighlightVisitor, LangVisitor, DumbAware {
     action: Runnable
   ): Boolean {
     highlightInfoHolder = holder
-    roundedHighlights.clear()
     val visitorKey = this::class.qualifiedName ?: this::class.java.name
 
     try {
@@ -116,7 +96,7 @@ abstract class ColorVisitor : HighlightVisitor, LangVisitor, DumbAware {
         RoundedBackgroundPainter.apply(
           file = file,
           visitorKey = visitorKey,
-          highlights = roundedHighlights,
+          highlights = collectRoundedHighlights(file, style.toRoundedPaintStyle()),
           arcRadius = instance.roundedArcRadius
         )
       } else {
@@ -125,10 +105,40 @@ abstract class ColorVisitor : HighlightVisitor, LangVisitor, DumbAware {
           visitorKey = visitorKey
         )
       }
-      roundedHighlights.clear()
       highlightInfoHolder = null
     }
     return true
+  }
+
+  /** Walks the whole file to compute the current, complete set of rounded highlights. */
+  private fun collectRoundedHighlights(file: PsiFile, paintStyle: RoundedPaintStyle): List<RoundedHighlight> {
+    val result = mutableListOf<RoundedHighlight>()
+
+    file.accept(object : PsiRecursiveElementWalkingVisitor() {
+      override fun visitElement(element: PsiElement) {
+        when {
+          canAcceptMultiple() -> acceptMultiple(element)?.forEach { match ->
+            val absoluteRange = IntRange(
+              element.textRange.startOffset + match.range.first,
+              element.textRange.startOffset + match.range.last
+            )
+            result += RoundedHighlight(range = absoluteRange, color = match.color, paintStyle = paintStyle)
+          }
+
+          else                -> accept(element)?.let { color ->
+            val textRange = element.textRange
+            result += RoundedHighlight(
+              range = IntRange(textRange.startOffset, textRange.endOffset),
+              color = color,
+              paintStyle = paintStyle
+            )
+          }
+        }
+        super.visitElement(element)
+      }
+    })
+
+    return result
   }
 
   override fun visit(element: PsiElement) {
