@@ -10,6 +10,14 @@
 
 ### Bump
 
+## 21.0.0
+
+### Fixes
+
+- Fix the issue where colors could disappear after adding or removing lines in some languages (thanks Claude!)
+- Replace the old Color Picker with the **Modern Color Picker** in the Gutter (thanks to @sausix)
+- Immediately update the color in the editor when using the color picker (thanks to @sausix)
+
 ## 20.0.0
 
 ### Features
