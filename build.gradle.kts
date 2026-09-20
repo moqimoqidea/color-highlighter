@@ -24,9 +24,7 @@
  *
  */
 
-import com.github.javaparser.printer.concretesyntaxmodel.CsmElement.token
 import io.gitlab.arturbosch.detekt.Detekt
-import org.gradle.internal.impldep.org.apache.commons.compress.harmony.pack200.PackingUtils.config
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 
@@ -47,19 +45,20 @@ plugins {
 }
 
 // Import variables from gradle.properties file
-val pluginGroup: String by project
-val pluginName: String by project
-val pluginVersion: String by project
-val pluginSinceBuild: String by project
-val pluginUntilBuild: String by project
-val pluginVerifierIdeVersions: String by project
+val platformType: String = properties("platformType")
+val platformVersion: String = properties("platformVersion")
+val platformPlugins: String = properties("platformPlugins")
+val platformDownloadSources: String = properties("platformDownloadSources")
 
-val platformType: String by project
-val platformVersion: String by project
-val platformPlugins: String by project
-val platformDownloadSources: String by project
+val pluginGroup: String = properties("pluginGroup")
+val pluginName: String = properties("pluginName")
+val pluginVersion: String = properties("pluginVersion")
+val pluginSinceBuild: String = properties("pluginSinceBuild")
+val pluginUntilBuild: String = properties("pluginUntilBuild")
+val pluginVerifierIdeVersions: String = properties("pluginVerifierIdeVersions")
 
-val javaVersion: String by project
+val javaVersion: String = properties("javaVersion")
+val gradleVersion: String = properties("gradleVersion")
 
 group = pluginGroup
 version = pluginVersion
